@@ -1,0 +1,13 @@
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
+
+# Logs and temp output
+*.log
+
+# Playwright / tooling scratch
+.playwright-mcp/
+
+# Dependencies (none are needed to run this, but ignore if ever added)
+node_modules/
