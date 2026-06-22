@@ -1,3 +1,6 @@
+<img width="3456" height="1916" alt="image" src="https://github.com/user-attachments/assets/e8f0871f-3a04-4457-9954-bb9195b17524" />
+
+
 # Graph Protocol Contract Map
 
 An interactive, single-page visualisation of every smart contract in The Graph
