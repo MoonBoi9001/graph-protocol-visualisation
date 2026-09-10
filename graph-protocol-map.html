@@ -989,36 +989,52 @@ window.__GRAPH_PROTOCOL__ = {"meta":{"branch":"deployment/testnet/2026-06-09/gip
         ((f.access && f.access.mods) || []).forEach((m) => out.push(`<span class="acc-badge mod">${esc(MOD_LABELS[m] || m)}</span>`));
         return out;
       }
+      // One row in the Parameters or Returns section: type, optional name, optional NatSpec text.
+      function paramRowHtml(type, name, description) {
+        let html = `<code class="type" data-type="${esc(type)}">${esc(type)}</code>`;
+        if (name) html += ` <span class="pname">${esc(name)}</span>`;
+        if (description) html += ` — <span class="pdesc">${esc(description)}</span>`;
+        return `<div class="param-row">${html}</div>`;
+      }
+      function paramsSectionHtml(f) {
+        const rows = f.inputs.map((i) => {
+          const d = f.doc && f.doc.params && f.doc.params[i.name];
+          return paramRowHtml(i.type, i.name || '—', d);
+        });
+        return `<div class="sec">Parameters</div>${rows.join('')}`;
+      }
+      function returnsSectionHtml(f) {
+        const rows = f.outputs.map((o, idx) => {
+          const d = f.doc && f.doc.returns && (f.doc.returns[o.name] || f.doc.returns['_' + idx]);
+          return paramRowHtml(o.type, o.name, d);
+        });
+        return `<div class="sec">Returns</div>${rows.join('')}`;
+      }
+      // "Who can call this" for a write function always shows, falling back to "anyone";
+      // for a read function it only shows when the function is actually restricted.
+      function accessSectionHtml(f, kind) {
+        const badges = accessBadges(f);
+        if (kind === 'writes') {
+          const row = badges.length ? badges.join('') : '<span class="acc-badge open">anyone — no restriction</span>';
+          return `<div class="sec">Who can call this</div><div class="access-row">${row}</div>` +
+            `<button class="fire-btn" data-fire="${esc(f.name)}">⚡ Simulate transaction</button>`;
+        }
+        if (kind === 'reads' && badges.length) {
+          return `<div class="sec">Who can call this</div><div class="access-row">${badges.join('')}</div>`;
+        }
+        return '';
+      }
       // The deep view for one function/event: NatSpec, params, returns, access.
       function fnDocHtml(f, kind) {
         const parts = [];
+        const hasNotice = !!(f.doc && (f.doc.notice || f.doc.details));
+        const hasInputs = !!(f.inputs && f.inputs.length);
         if (f.doc && f.doc.notice) parts.push(`<div class="notice">${esc(f.doc.notice)}</div>`);
         if (f.doc && f.doc.details) parts.push(`<div class="details">${esc(f.doc.details)}</div>`);
-        if (f.inputs && f.inputs.length) {
-          parts.push(`<div class="sec">Parameters</div>`);
-          parts.push(f.inputs.map((i) => {
-            const d = f.doc && f.doc.params && f.doc.params[i.name];
-            return `<div class="param-row"><code class="type" data-type="${esc(i.type)}">${esc(i.type)}</code> <span class="pname">${esc(i.name || '—')}</span>${d ? ` — <span class="pdesc">${esc(d)}</span>` : ''}</div>`;
-          }).join(''));
-        }
-        if (kind !== 'events' && f.outputs && f.outputs.length) {
-          parts.push(`<div class="sec">Returns</div>`);
-          parts.push(f.outputs.map((o, idx) => {
-            const d = f.doc && f.doc.returns && (f.doc.returns[o.name] || f.doc.returns['_' + idx]);
-            return `<div class="param-row"><code class="type" data-type="${esc(o.type)}">${esc(o.type)}</code>${o.name ? ` <span class="pname">${esc(o.name)}</span>` : ''}${d ? ` — <span class="pdesc">${esc(d)}</span>` : ''}</div>`;
-          }).join(''));
-        }
-        if (kind === 'writes') {
-          const badges = accessBadges(f);
-          parts.push(`<div class="sec">Who can call this</div>`);
-          parts.push(`<div class="access-row">${badges.length ? badges.join('') : '<span class="acc-badge open">anyone — no restriction</span>'}</div>`);
-          parts.push(`<button class="fire-btn" data-fire="${esc(f.name)}">⚡ Simulate transaction</button>`);
-        } else if (kind === 'reads') {
-          const badges = accessBadges(f);
-          if (badges.length) parts.push(`<div class="sec">Who can call this</div><div class="access-row">${badges.join('')}</div>`);
-        }
-        if (!(f.doc && (f.doc.notice || f.doc.details)) && !(f.inputs && f.inputs.length) && kind === 'events')
-          parts.push(`<div class="nodoc">No NatSpec documentation in source.</div>`);
+        if (hasInputs) parts.push(paramsSectionHtml(f));
+        if (kind !== 'events' && f.outputs && f.outputs.length) parts.push(returnsSectionHtml(f));
+        parts.push(accessSectionHtml(f, kind));
+        if (kind === 'events' && !hasNotice && !hasInputs) parts.push(`<div class="nodoc">No NatSpec documentation in source.</div>`);
         return `<div class="fn-doc">${parts.join('')}</div>`;
       }
 
