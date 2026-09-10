@@ -1061,7 +1061,7 @@ window.__GRAPH_PROTOCOL__ = {"meta":{"branch":"deployment/testnet/2026-06-09/gip
                 <span class="fn-sp"></span>
                 <span class="caret">▶</span>
               </div>
-              ${e.inputs.length ? `<div class="params">${e.inputs.map((i)=>`${i.indexed?'<span style="color:var(--event)">indexed </span>':''}${esc(i.type)} <span class="pn">${esc(i.name)}</span>`).join(',<br/>')}</div>` : '<div class="params" style="color:var(--faint)">no parameters</div>'}
+              ${eventParamsHtml(e)}
               ${fnDocHtml(e, 'events')}
             </div>`).join('') : `<div class="empty">No events match.</div>`;
           wireExpand();
@@ -1072,7 +1072,7 @@ window.__GRAPH_PROTOCOL__ = {"meta":{"branch":"deployment/testnet/2026-06-09/gip
         const items = arr.filter((f) => f.name.toLowerCase().includes(q) || f.sig.toLowerCase().includes(q) || ((f.doc && f.doc.notice) || '').toLowerCase().includes(q));
         if (!items.length) { list.innerHTML = `<div class="empty">No ${activeTab} functions match.</div>`; return; }
         list.innerHTML = items.map((f) => {
-          const mut = f.mut === 'payable' ? 'payable' : (f.mut === 'view' || f.mut === 'pure') ? 'view' : 'nonpayable';
+          const mut = mutabilityClass(f.mut);
           return `<div class="fn clickable" data-key="${esc(f.sig)}" data-fn="${esc(f.name)}">
             <div class="fn-top">
               <span class="fn-name">${esc(f.name)}${isGated(f)?'<span class="lock" title="role-restricted">🔒</span>':''}</span>
@@ -1081,12 +1081,40 @@ window.__GRAPH_PROTOCOL__ = {"meta":{"branch":"deployment/testnet/2026-06-09/gip
               <span class="mut ${mut}">${f.mut}</span>
               <span class="caret">▶</span>
             </div>
-            ${f.inputs.length ? `<div class="params">(${f.inputs.map((i)=>`${esc(i.type)} <span class="pn">${esc(i.name)}</span>`).join(', ')})</div>` : '<div class="params">( )</div>'}
-            ${f.outputs && f.outputs.length ? `<div class="params ret">→ ${f.outputs.map((o)=>`${esc(o.type)}${o.name?' '+esc(o.name):''}`).join(', ')}</div>` : ''}
+            ${fnParamsHtml(f)}
+            ${fnReturnsHtml(f)}
             ${fnDocHtml(f, activeTab)}
           </div>`;
         }).join('');
         wireExpand();
+      }
+      // The badge colour class for a function's state mutability: payable, view (which also
+      // covers pure) or nonpayable.
+      function mutabilityClass(mut) {
+        if (mut === 'payable') return 'payable';
+        if (mut === 'view' || mut === 'pure') return 'view';
+        return 'nonpayable';
+      }
+      // The one-line parameter list under an event row, 1 parameter per line.
+      function eventParamsHtml(e) {
+        if (!e.inputs.length) return '<div class="params" style="color:var(--faint)">no parameters</div>';
+        const params = e.inputs.map((i) => {
+          const indexed = i.indexed ? '<span style="color:var(--event)">indexed </span>' : '';
+          return `${indexed}${esc(i.type)} <span class="pn">${esc(i.name)}</span>`;
+        });
+        return `<div class="params">${params.join(',<br/>')}</div>`;
+      }
+      // The bracketed parameter list under a function row.
+      function fnParamsHtml(f) {
+        if (!f.inputs.length) return '<div class="params">( )</div>';
+        const params = f.inputs.map((i) => `${esc(i.type)} <span class="pn">${esc(i.name)}</span>`);
+        return `<div class="params">(${params.join(', ')})</div>`;
+      }
+      // The arrow-prefixed return list under a function row, or nothing when it returns nothing.
+      function fnReturnsHtml(f) {
+        if (!(f.outputs && f.outputs.length)) return '';
+        const outs = f.outputs.map((o) => `${esc(o.type)}${o.name ? ' ' + esc(o.name) : ''}`);
+        return `<div class="params ret">→ ${outs.join(', ')}</div>`;
       }
 
       // Expansion + fire wiring. Toggling lives on the header so the open body
