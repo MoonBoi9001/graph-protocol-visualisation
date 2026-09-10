@@ -1254,11 +1254,12 @@
         const r = nodesById[nodeId];
         const col = LAYERS[r.layer].color;
         const args = ev.inputs.slice(0, 3).map((i) => i.name || i.type).join(', ');
+        const argsHtml = args ? `<span class="ev-args">(${esc(args)})</span>` : '';
         return `<span class="dot" style="background:${col};box-shadow:0 0 7px ${col}"></span>
           <span class="ev-name">${esc(ev.name)}</span>
           <span class="ev-arrow">·</span>
           <span class="ev-from">${esc(r.name.replace(/ \(.*\)/,''))}</span>
-          ${args ? `<span class="ev-args">(${esc(args)})</span>` : ''}`;
+          ${argsHtml}`;
       }
       function pushEventsFor(nodeId, burst) {
         const r = nodesById[nodeId];
