@@ -610,41 +610,8 @@ window.__GRAPH_PROTOCOL__ = {"meta":{"branch":"deployment/testnet/2026-06-09/gip
         drawGrid();
 
         const focusSet = focusNodes();
-
-        // edges
-        DATA.edges.forEach((e) => {
-          if (!edgeVisible(e)) return;
-          const g = edgeGeo(e);
-          const a = worldToScreen(g.a.x, g.a.y), b = worldToScreen(g.b.x, g.b.y), c = worldToScreen(g.ctrl.x, g.ctrl.y);
-          const inFocus = !focusSet || (focusSet.has(e.from) && focusSet.has(e.to) && edgeInFocus(e));
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(c.x, c.y, b.x, b.y);
-          ctx.lineWidth = inFocus ? 2 : 1;
-          ctx.setLineDash(e.kind === 'registry' ? [3, 5] : []);
-          ctx.strokeStyle = inFocus ? hexA(nodeMap[e.from].color, 0.7) : (focusSet ? 'rgba(80,86,128,0.10)' : 'rgba(90,96,138,0.20)');
-          ctx.stroke();
-          ctx.setLineDash([]);
-        });
-
-        // particles
-        for (let i = particles.length - 1; i >= 0; i--) {
-          const p = particles[i];
-          if (p.delay && p.delay > 0) { p.delay -= dt; continue; }
-          p.t += p.speed * (dt / 16.6);
-          if (p.t >= 1 || !edgeVisible(p.e)) { particles.splice(i, 1); continue; }
-          const g = edgeGeo(p.e);
-          const pt = quad(g.a, g.ctrl, g.b, p.t);
-          const s = worldToScreen(pt.x, pt.y);
-          const col = nodeMap[p.e.from].color;
-          const rad = (p.big ? 3.2 : 2.0) * Math.min(cam.scale + 0.3, 1.5);
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, rad, 0, 7);
-          ctx.fillStyle = col;
-          ctx.shadowBlur = p.big ? 12 : 6; ctx.shadowColor = col;
-          ctx.globalAlpha = p.reg ? 0.5 : 0.95;
-          ctx.fill();
-          ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-        }
+        drawEdges(focusSet);
+        drawParticles(dt);
 
         // nodes — draw bodies first, then labels in a second pass so text is never
         // covered by a neighbouring circle.
@@ -709,6 +676,50 @@ window.__GRAPH_PROTOCOL__ = {"meta":{"branch":"deployment/testnet/2026-06-09/gip
           ctx.globalAlpha = 1;
         });
         requestAnimationFrame(frame);
+      }
+      // Edge colour: highlighted edges take their source node's colour; the rest fade
+      // further when something is focused so the highlighted ones stand out.
+      function edgeStrokeStyle(e, inFocus, focusSet) {
+        if (inFocus) return hexA(nodeMap[e.from].color, 0.7);
+        if (focusSet) return 'rgba(80,86,128,0.10)';
+        return 'rgba(90,96,138,0.20)';
+      }
+      function drawEdges(focusSet) {
+        DATA.edges.forEach((e) => {
+          if (!edgeVisible(e)) return;
+          const g = edgeGeo(e);
+          const a = worldToScreen(g.a.x, g.a.y), b = worldToScreen(g.b.x, g.b.y), c = worldToScreen(g.ctrl.x, g.ctrl.y);
+          const inFocus = !focusSet || (focusSet.has(e.from) && focusSet.has(e.to) && edgeInFocus(e));
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(c.x, c.y, b.x, b.y);
+          ctx.lineWidth = inFocus ? 2 : 1;
+          ctx.setLineDash(e.kind === 'registry' ? [3, 5] : []);
+          ctx.strokeStyle = edgeStrokeStyle(e, inFocus, focusSet);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        });
+      }
+      // Advances every in-flight particle by dt milliseconds, drops the ones that have
+      // arrived or whose edge is hidden, and draws the rest.
+      function drawParticles(dt) {
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          if (p.delay && p.delay > 0) { p.delay -= dt; continue; }
+          p.t += p.speed * (dt / 16.6);
+          if (p.t >= 1 || !edgeVisible(p.e)) { particles.splice(i, 1); continue; }
+          const g = edgeGeo(p.e);
+          const pt = quad(g.a, g.ctrl, g.b, p.t);
+          const s = worldToScreen(pt.x, pt.y);
+          const col = nodeMap[p.e.from].color;
+          const rad = (p.big ? 3.2 : 2.0) * Math.min(cam.scale + 0.3, 1.5);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, rad, 0, 7);
+          ctx.fillStyle = col;
+          ctx.shadowBlur = p.big ? 12 : 6; ctx.shadowColor = col;
+          ctx.globalAlpha = p.reg ? 0.5 : 0.95;
+          ctx.fill();
+          ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+        }
       }
       function roundRect(x, y, w, h, rad) {
         ctx.beginPath();
