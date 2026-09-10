@@ -859,7 +859,11 @@
       // ---------- detail panel ----------
       const panel = document.getElementById('panel');
       let panelOpen = false, activeTab = 'writes', fnFilter = '';
-      document.getElementById('panelClose').onclick = () => { panel.classList.remove('open'); panelOpen = false; selected = null; fit(true); };
+      document.getElementById('panelClose').onclick = () => {
+        panel.classList.remove('open'); panelOpen = false; selected = null;
+        document.getElementById('pName').textContent = 'No contract selected';
+        fit(true);
+      };
 
       // ---------- resizable panel ----------
       function applyPanelW() { panel.style.width = panelW + 'px'; }
