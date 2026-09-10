@@ -358,7 +358,7 @@
           <div class="panel-head">
             <span class="close" id="panelClose">✕</span>
             <span class="chip" id="pChip"></span>
-            <h2 id="pName"></h2>
+            <h2 id="pName">No contract selected</h2>
             <div class="addr" id="pAddr"></div>
           </div>
           <div class="desc" id="pDesc"></div>
@@ -858,7 +858,11 @@
       // ---------- detail panel ----------
       const panel = document.getElementById('panel');
       let panelOpen = false, activeTab = 'writes', fnFilter = '';
-      document.getElementById('panelClose').onclick = () => { panel.classList.remove('open'); panelOpen = false; selected = null; fit(true); };
+      document.getElementById('panelClose').onclick = () => {
+        panel.classList.remove('open'); panelOpen = false; selected = null;
+        document.getElementById('pName').textContent = 'No contract selected';
+        fit(true);
+      };
 
       // ---------- resizable panel ----------
       function applyPanelW() { panel.style.width = panelW + 'px'; }
