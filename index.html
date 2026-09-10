@@ -420,7 +420,10 @@
       // Each node gets its own slot on an evenly-spaced ring around its district
       // centre, so circles in a crowded district never stack on top of each other.
       const _members = {};
-      DATA.nodes.forEach((n) => { (_members[n.layer] = _members[n.layer] || []).push(n.id); });
+      DATA.nodes.forEach((n) => {
+        if (!_members[n.layer]) _members[n.layer] = [];
+        _members[n.layer].push(n.id);
+      });
       const slot = {};
       Object.entries(_members).forEach(([layer, ids]) => {
         const a = districtAnchor[layer] || { x: 700, y: 500 };
